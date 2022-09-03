@@ -1,0 +1,53 @@
+##########################
+# LaSPACE Subaward No.: PO-0000168186
+#
+# Steps to perform the MLDEG algortihm on the DLD1 and MOLT4 (GSE69271) dataset
+# Run these in the terminal (windows in our case)
+# make sure that python, perl, weka, and java are installed in the environment
+# Important: install the 'networkx version 1.11' for python NOT the version 2.0 or higher as 1.11 has the correct/consistent codes to calculate PPI degree and do network propagation
+# Update filenames of generated data accordingly to make sure the codes are using the correct files
+#
+#########################
+
+# activate the environment where all the software and packages are installed (see above)
+# cd to the folder where the datafiles of gene expression (STRING PPI, gene expression and DEG), and the extracted MLDEG files
+cd C:\Users\dhanf\Desktop\MachineLearning\LURA_2021_2022\LURA_data\MLDEG_combinedData_MOLT4\MLDEG-master\MLDEG-master
+
+# then execute these steps below:
+
+# step 1 python:
+# python netFeatures.py -n <STRING PPI in entrezID> -i <Gene Expression Profile in entrezid> -r <PCC cutoff> -p <PCC p-value cutoff> -o <Output File Prefix> -s <# of treated samples:# of control samples>
+python netFeatures.py -n 9606.protein.entrez.v11.5.txt -i MOLT4_geneExp_ENTREZID_final.txt -r 0.7 -p 0.05 -o GSE69271 -s 6:6
+
+
+# step 2 perl: MLDEG.pl
+# perl MLDEG.pl <DEG Results> <PCC Result> <Network Propagation Result> <log2FC cutoff for training data> <p-value cutoff for training data> <Output File Prefix>
+perl MLDEG.pl MOLT4_DEG_pValue_log2FC_ENTREZID_final.txt GSE69271_corr.stats.txt GSE69271_netProp.txt 0.5 0.01 GSE69271
+
+
+# step 3 perl: weka.runner.pl
+# perl weka.runner.pl <Classifier (SMO, LR or J48)> <Output File Prefix>
+
+
+--->>> make sure to add the path to the "weka.jar" follow the SET lines to be done in the terminal and shown below
+# weka.runner -> config to access weka package
+# modify the weka file name\folder name accdg to your version
+
+SET WEKA_HOME=C:\Program Files\Weka-3-8-6
+SET CLASSPATH=%CLASPATH%;%WEKA_HOME%\weka.jar
+SET HEAP_OPTION=-Xms4096m -Xmx8192m
+SET JAVA_COMMAND=java %HEAP_OPTION%
+%JAVA_COMMAND% weka.core.SystemInfo
+
+
+# now run the perl 
+perl weka.runner.pl LR GSE69271
+
+# step 4: weka.prediction.parser.pl
+# perl weka.prediction.parser.pl <Test Gene Set> <Weka Prediction Result> <Output File Prefix> <Confidence Cutoff>
+perl weka.prediction.parser.pl GSE69271_testset.list GSE69271.LR.results GSE69271 0
+
+
+# step 5: MLDEG.results.pl
+# perl MLDEG.results.pl <Training Gene Set> <Predicted Gene Set> <Output File Prefix>
+perl MLDEG.results.pl GSE69271_trainingset.list GSE69271_predicted.result GSE69271
